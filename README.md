@@ -191,13 +191,43 @@ Output:
 +-----------------------------------------------------------------------------+
 ```
 
-### 4. Trace Provenance Dependency Graph
+### 4. Forward-Evaluate Witness from Raw Inputs
+
+```bash
+prooflens compute-witness examples/multiplier.r1cs --inputs examples/multiplier_inputs.json --sym examples/multiplier.sym
+```
+
+### 5. Algebraic Witness Auto-Fixer
+
+```bash
+prooflens fix examples/multiplier.r1cs --witness examples/multiplier_violation.wtns --sym examples/multiplier.sym
+```
+
+### 6. Compare Circuit Revisions (R1CS Diff)
+
+```bash
+prooflens diff examples/multiplier.r1cs examples/pythagorean.r1cs --sym-a examples/multiplier.sym --sym-b examples/pythagorean.sym
+```
+
+### 7. Scan Bit-Width & Field Wrap-Around
+
+```bash
+prooflens scan-bits examples/vulnerable.r1cs --sym examples/vulnerable.sym
+```
+
+### 8. Export Solidity & Foundry Test Vectors
+
+```bash
+prooflens export-test examples/pythagorean.r1cs --witness examples/pythagorean_satisfied.wtns --sym examples/pythagorean.sym --format foundry
+```
+
+### 9. Trace Provenance Dependency Graph
 
 ```bash
 prooflens trace examples/pythagorean.r1cs --signal main.c2 --sym examples/pythagorean.sym
 ```
 
-### 5. Launch Interactive Web Studio
+### 10. Launch Interactive Web Studio
 
 ```bash
 prooflens studio --port 8000
@@ -207,11 +237,11 @@ prooflens studio --port 8000
 
 ## Web Studio Views
 
-| Overview & Health | Constraints Inspector |
+| Overview & Auto-Fixer | Constraints Inspector |
 |---|---|
 | ![Overview](docs/images/prooflens-1.png) | ![Constraints](docs/images/prooflens-2.png) |
 
-| Signal DAG Visualizer | Signal Mutator |
+| Signal DAG & Stepper | Signal Mutator & Simulator |
 |---|---|
 | ![Signal DAG](docs/images/prooflens-3.png) | ![Signals](docs/images/prooflens-4.png) |
 
@@ -224,8 +254,8 @@ pytest -v --cov=prooflens tests/
 ```
 
 Results:
-- 44 passing unit tests
-- 93% test coverage across core arithmetic, R1CS binary parsing, witness inspection, and Studio APIs.
+- 51 passing unit tests
+- High test coverage across core arithmetic, R1CS binary parsing, witness solver, DAG engine, and Studio APIs.
 
 ---
 

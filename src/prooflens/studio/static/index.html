@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>ProofLens Studio - ZKP Circuit Debugger</title>
+  <title>ProofLens Studio - ZKP Circuit Debugger & Simulator</title>
   <!-- Tailwind CSS -->
   <script src="https://cdn.tailwindcss.com"></script>
   <!-- Cytoscape.js -->
@@ -31,7 +31,7 @@
   </script>
   <style>
     body { background-color: #080c16; color: #f3f4f6; font-family: ui-sans-serif, system-ui, -apple-system, sans-serif; }
-    #cy { width: 100%; height: 580px; background: #0a0f1d; border-radius: 0.75rem; border: 1px solid #1f2937; }
+    #cy { width: 100%; height: 560px; background: #0a0f1d; border-radius: 0.75rem; border: 1px solid #1f2937; }
     .code-font { font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace; }
   </style>
 </head>
@@ -46,9 +46,9 @@
       <div>
         <div class="flex items-center space-x-2">
           <span class="font-bold text-lg tracking-tight bg-gradient-to-r from-cyan-400 to-violet-400 bg-clip-text text-transparent">ProofLens</span>
-          <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono">v0.1.0</span>
+          <span class="text-xs px-2 py-0.5 rounded-full bg-cyan-950 border border-cyan-800 text-cyan-300 font-mono">v0.2.0</span>
         </div>
-        <p class="text-xs text-gray-400">Zero-Knowledge Circuit Debugger & Witness Inspector</p>
+        <p class="text-xs text-gray-400">Zero-Knowledge Circuit Debugger, Solver & Witness Simulator</p>
       </div>
     </div>
 
@@ -71,10 +71,16 @@
         <span id="statusText">Checking...</span>
       </div>
 
+      <!-- Export Solidity Test -->
+      <button onclick="openExportModal()" class="flex items-center space-x-1.5 bg-gray-800 hover:bg-gray-700 text-gray-200 font-semibold px-3 py-1.5 rounded-lg text-xs transition border border-gray-700">
+        <i data-lucide="file-code" class="w-4 h-4 text-cyan-400"></i>
+        <span>Foundry Test</span>
+      </button>
+
       <!-- Upload Button -->
       <button onclick="toggleUploadModal()" class="flex items-center space-x-1.5 bg-cyan-600 hover:bg-cyan-500 text-gray-950 font-semibold px-3.5 py-1.5 rounded-lg text-xs transition shadow-md shadow-cyan-600/20">
         <i data-lucide="upload" class="w-4 h-4"></i>
-        <span>Upload Artifacts</span>
+        <span>Upload</span>
       </button>
     </div>
   </header>
@@ -92,11 +98,11 @@
     </button>
     <button onclick="switchTab('dag')" id="tab-dag" class="tab-btn px-3 py-1.5 rounded-md text-gray-400 hover:text-gray-200 flex items-center space-x-2">
       <i data-lucide="git-fork" class="w-4 h-4"></i>
-      <span>Signal DAG</span>
+      <span>Signal DAG & Stepper</span>
     </button>
     <button onclick="switchTab('signals')" id="tab-signals" class="tab-btn px-3 py-1.5 rounded-md text-gray-400 hover:text-gray-200 flex items-center space-x-2">
       <i data-lucide="sliders" class="w-4 h-4"></i>
-      <span>Signals & Mutator</span>
+      <span>Signals & Simulator</span>
     </button>
     <button onclick="switchTab('audit')" id="tab-audit" class="tab-btn px-3 py-1.5 rounded-md text-gray-400 hover:text-gray-200 flex items-center space-x-2">
       <i data-lucide="shield-alert" class="w-4 h-4"></i>
@@ -129,6 +135,23 @@
           <div class="text-2xl font-black font-mono" id="stat-sat-ratio">0 / 0</div>
           <div class="text-xs uppercase text-gray-400">Satisfaction Rate</div>
         </div>
+      </div>
+
+      <!-- Auto-Fix Suggestion Banner (Appears if violations exist) -->
+      <div id="autoFixBanner" class="hidden p-4 rounded-xl border border-cyan-800 bg-cyan-950/30 flex items-center justify-between">
+        <div class="flex items-center space-x-3">
+          <div class="w-8 h-8 rounded-lg bg-cyan-500/20 text-cyan-400 flex items-center justify-center">
+            <i data-lucide="sparkles" class="w-4 h-4"></i>
+          </div>
+          <div>
+            <h4 class="text-sm font-bold text-cyan-200" id="autoFixTitle">Algebraic Fix Detected</h4>
+            <p class="text-xs text-gray-300" id="autoFixDesc">Calculated exact F_q value to resolve constraint violation.</p>
+          </div>
+        </div>
+        <button id="autoFixBtn" onclick="applyTopFix()" class="px-3.5 py-1.5 rounded-lg bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold text-xs transition flex items-center space-x-1.5 shadow-lg shadow-cyan-500/20">
+          <i data-lucide="zap" class="w-3.5 h-3.5"></i>
+          <span>Apply 1-Click Fix</span>
+        </button>
       </div>
 
       <!-- Metric Grid -->
@@ -196,7 +219,7 @@
               <th class="p-3 w-28 text-center">A &times; B</th>
               <th class="p-3 w-28 text-center">C</th>
               <th class="p-3 w-28 text-center">Residual</th>
-              <th class="p-3 w-28 text-center">Status</th>
+              <th class="p-3 w-32 text-center">Action / Status</th>
             </tr>
           </thead>
           <tbody id="constraintsTableBody" class="divide-y divide-gray-800/60 code-font">
@@ -206,18 +229,29 @@
       </div>
     </div>
 
-    <!-- TAB 3: DAG VISUALIZER -->
+    <!-- TAB 3: DAG VISUALIZER & TIME-TRAVEL STEPPER -->
     <div id="view-dag" class="hidden space-y-4">
-      <div class="flex items-center justify-between bg-gray-900/40 p-3 rounded-xl border border-gray-800">
+      <!-- Time-Travel Stepper Controller -->
+      <div class="flex items-center justify-between bg-gray-900/60 p-3 rounded-xl border border-gray-800">
+        <div class="flex items-center space-x-3">
+          <div class="flex items-center space-x-1">
+            <button onclick="stepPrev()" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200" title="Step Previous"><i data-lucide="skip-back" class="w-4 h-4"></i></button>
+            <button onclick="togglePlayStepper()" id="stepperPlayBtn" class="p-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-gray-950 font-bold" title="Play / Pause"><i data-lucide="play" class="w-4 h-4"></i></button>
+            <button onclick="stepNext()" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-200" title="Step Next"><i data-lucide="skip-forward" class="w-4 h-4"></i></button>
+            <button onclick="resetStepper()" class="p-1.5 rounded-lg bg-gray-800 hover:bg-gray-700 text-gray-400" title="Reset"><i data-lucide="rotate-ccw" class="w-4 h-4"></i></button>
+          </div>
+          <div class="text-xs">
+            <span class="text-gray-400">Time-Travel Step:</span>
+            <span id="stepCounter" class="font-bold text-cyan-400 ml-1">0 / 0</span>
+            <span id="stepDesc" class="text-gray-400 ml-2 italic">Ready</span>
+          </div>
+        </div>
+
         <div class="flex items-center space-x-2 text-xs">
           <span class="text-gray-400">Layout:</span>
           <button onclick="applyDAGLayout('breadthfirst')" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Layered</button>
           <button onclick="applyDAGLayout('cose')" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Physics (Cose)</button>
-          <button onclick="applyDAGLayout('circle')" class="px-2 py-1 rounded bg-gray-800 hover:bg-gray-700 text-gray-300">Circular</button>
-        </div>
-        <div class="flex items-center space-x-2 text-xs">
-          <button onclick="resetDAG()" class="px-3 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900">Reset View</button>
-          <span class="text-gray-500">| Tip: Click any node to isolate its upstream provenance!</span>
+          <button onclick="resetDAG()" class="px-2.5 py-1 rounded bg-cyan-950 text-cyan-300 border border-cyan-800 hover:bg-cyan-900">Reset View</button>
         </div>
       </div>
 
@@ -225,7 +259,7 @@
       <div id="cy"></div>
 
       <!-- Legend -->
-      <div class="flex items-center justify-center space-x-6 text-xs text-gray-400 pt-2">
+      <div class="flex items-center justify-center space-x-6 text-xs text-gray-400 pt-1">
         <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-cyan-400"></span><span>Public Output</span></div>
         <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-blue-400"></span><span>Public Input</span></div>
         <div class="flex items-center space-x-1.5"><span class="w-3 h-3 rounded-full bg-amber-400"></span><span>Private Input</span></div>
@@ -235,8 +269,23 @@
       </div>
     </div>
 
-    <!-- TAB 4: SIGNALS & WITNESS MUTATOR -->
+    <!-- TAB 4: SIGNALS & SIMULATOR -->
     <div id="view-signals" class="hidden space-y-4">
+      <!-- Simulator Input Trigger -->
+      <div class="p-4 rounded-xl border border-gray-800 bg-gray-900/40 flex items-center justify-between">
+        <div>
+          <h4 class="font-bold text-gray-100 flex items-center space-x-2">
+            <i data-lucide="cpu" class="w-4 h-4 text-cyan-400"></i>
+            <span>Forward Witness Simulator</span>
+          </h4>
+          <p class="text-xs text-gray-400 mt-0.5">Input primary values to solve all intermediate wires automatically without snarkjs.</p>
+        </div>
+        <button onclick="simulateAllWitness()" class="px-3.5 py-1.5 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-gray-950 font-bold text-xs transition flex items-center space-x-1.5 shadow-md shadow-cyan-600/20">
+          <i data-lucide="play-circle" class="w-4 h-4"></i>
+          <span>Compute Forward Witness</span>
+        </button>
+      </div>
+
       <div class="flex items-center justify-between">
         <input type="text" id="signalSearch" oninput="filterSignals()" placeholder="Search signal name or ID..." class="bg-gray-900 border border-gray-700 px-3 py-1.5 rounded-lg text-sm text-gray-200 outline-none focus:border-cyan-500 w-72" />
         <span class="text-xs text-gray-400">Edit values and click <strong class="text-cyan-400">Set</strong> to see constraints recompute in real-time.</span>
@@ -260,14 +309,14 @@
       </div>
     </div>
 
-    <!-- TAB 5: SECURITY AUDIT -->
+    <!-- TAB 5: SECURITY AUDIT & BIT-WIDTH CHECK -->
     <div id="view-audit" class="hidden space-y-4">
       <div class="rounded-xl border border-gray-800 bg-gray-900/40 p-4">
         <h3 class="font-bold text-gray-100 flex items-center space-x-2">
           <i data-lucide="shield-alert" class="w-5 h-5 text-amber-400"></i>
-          <span>Under-Constrained Signal & Witness Malleability Scanner</span>
+          <span>Under-Constrained Signal, Bit-Width & Field Wrap-Around Scanner</span>
         </h3>
-        <p class="text-xs text-gray-400 mt-1">Identifies variables that lack quadratic enforcement or dead signals that waste constraint capacity.</p>
+        <p class="text-xs text-gray-400 mt-1">Identifies variables that lack quadratic enforcement, missing boolean constraints on bits, and field wrap-around values near modulus q.</p>
       </div>
 
       <div id="auditFindingsContainer" class="space-y-3">
@@ -314,10 +363,31 @@
     </div>
   </div>
 
+  <!-- Export Modal -->
+  <div id="exportModal" class="fixed inset-0 bg-black/70 backdrop-blur-sm z-50 hidden flex items-center justify-center p-4">
+    <div class="bg-gray-900 border border-gray-800 rounded-2xl max-w-2xl w-full p-6 space-y-4">
+      <div class="flex items-center justify-between">
+        <h3 class="font-bold text-lg text-gray-100 flex items-center space-x-2">
+          <i data-lucide="file-code" class="w-5 h-5 text-cyan-400"></i>
+          <span>Foundry Test Vector Contract (CircuitProofTest.t.sol)</span>
+        </h3>
+        <button onclick="toggleExportModal()" class="text-gray-400 hover:text-gray-200"><i data-lucide="x" class="w-5 h-5"></i></button>
+      </div>
+      <pre id="solidityExportBlock" class="p-4 rounded-xl bg-gray-950 border border-gray-800 text-gray-200 code-font text-xs overflow-x-auto max-h-96 leading-relaxed"></pre>
+      <div class="flex justify-end">
+        <button onclick="copySolidityCode()" id="copySolidityBtn" class="px-4 py-2 rounded-lg bg-cyan-600 hover:bg-cyan-500 text-gray-950 font-bold text-xs transition">Copy Code</button>
+      </div>
+    </div>
+  </div>
+
   <script>
     let activeTab = 'overview';
     let currentConstraints = [];
     let currentSignals = [];
+    let currentFixes = [];
+    let traceSteps = [];
+    let currentStepIdx = 0;
+    let stepperInterval = null;
     let constraintFilter = 'all';
     let cyInstance = null;
 
@@ -331,7 +401,9 @@
       await fetchConstraints();
       await fetchSignals();
       await fetchAudit();
+      await fetchFixes();
       await fetchSource();
+      await fetchTraceSteps();
       if (activeTab === 'dag') renderDAG();
     }
 
@@ -350,7 +422,6 @@
 
       const statusBadge = document.getElementById('statusBadge');
       const statusText = document.getElementById('statusText');
-      const bannerCard = document.getElementById('bannerCard');
       const bannerTitle = document.getElementById('bannerTitle');
       const bannerSubtitle = document.getElementById('bannerSubtitle');
       const bannerIcon = document.getElementById('bannerIcon');
@@ -408,6 +479,16 @@
         const tr = document.createElement('tr');
         tr.className = c.is_satisfied ? 'hover:bg-gray-800/30' : 'bg-red-950/20 hover:bg-red-950/30 border-l-4 border-l-red-500';
 
+        let fixButtonHtml = '';
+        const matchingFix = currentFixes.find(f => f.constraint_id === c.id);
+        if (!c.is_satisfied && matchingFix) {
+          fixButtonHtml = `
+            <button onclick="applyFixDirectly(${matchingFix.wire_id}, '${matchingFix.suggested_value}')" class="mt-1 block mx-auto px-2 py-0.5 rounded bg-cyan-500 hover:bg-cyan-400 text-gray-950 font-bold text-[10px] transition">
+              ⚡ Fix: ${matchingFix.wire_name} &rarr; ${matchingFix.suggested_value}
+            </button>
+          `;
+        }
+
         tr.innerHTML = `
           <td class="p-3 text-gray-400 font-bold">C${c.id}</td>
           <td class="p-3 text-gray-200">${c.formula}</td>
@@ -418,9 +499,42 @@
             <span class="px-2 py-0.5 rounded text-xs font-semibold ${c.is_satisfied ? 'bg-emerald-950 text-emerald-400 border border-emerald-800' : 'bg-red-950 text-red-400 border border-red-800'}">
               ${c.is_satisfied ? 'PASS' : 'FAIL'}
             </span>
+            ${fixButtonHtml}
           </td>
         `;
         tbody.appendChild(tr);
+      }
+    }
+
+    async function fetchFixes() {
+      const res = await fetch('/api/circuit/auto-fixes');
+      currentFixes = await res.json();
+
+      const banner = document.getElementById('autoFixBanner');
+      if (currentFixes.length > 0) {
+        const topFix = currentFixes[0];
+        document.getElementById('autoFixTitle').innerText = `Algebraic Auto-Fix Available for C${topFix.constraint_id}`;
+        document.getElementById('autoFixDesc').innerText = `Change ${topFix.wire_name} from ${topFix.current_value} to ${topFix.suggested_value} (${topFix.net_satisfied_change > 0 ? '+' + topFix.net_satisfied_change : topFix.net_satisfied_change} satisfied).`;
+        banner.classList.remove('hidden');
+      } else {
+        banner.classList.add('hidden');
+      }
+    }
+
+    async function applyTopFix() {
+      if (currentFixes.length === 0) return;
+      const top = currentFixes[0];
+      await applyFixDirectly(top.wire_id, top.suggested_value);
+    }
+
+    async function applyFixDirectly(wireId, suggestedVal) {
+      const res = await fetch('/api/witness/apply-fix', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ wire_id: wireId, suggested_value: suggestedVal })
+      });
+      if (res.ok) {
+        await refreshAll();
       }
     }
 
@@ -478,9 +592,30 @@
       }
     }
 
+    async function simulateAllWitness() {
+      const inputs = {};
+      for (const s of currentSignals) {
+        if (s.wire_type === 'public_input' || s.wire_type === 'private_input') {
+          inputs[s.wire_id] = s.value;
+        }
+      }
+      const res = await fetch('/api/witness/compute', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ inputs: inputs })
+      });
+      if (res.ok) {
+        await refreshAll();
+      }
+    }
+
     async function fetchAudit() {
-      const res = await fetch('/api/circuit/audit');
-      const findings = await res.json();
+      const resStatic = await fetch('/api/circuit/audit');
+      const staticFindings = await resStatic.json();
+      const resBit = await fetch('/api/circuit/bit-audit');
+      const bitFindings = await resBit.json();
+
+      const findings = [...staticFindings, ...bitFindings];
       const container = document.getElementById('auditFindingsContainer');
       const badge = document.getElementById('badge-audit-count');
 
@@ -497,7 +632,7 @@
           <div class="p-8 text-center text-emerald-400 bg-emerald-950/20 border border-emerald-900 rounded-xl">
             <i data-lucide="shield-check" class="w-10 h-10 mx-auto mb-2"></i>
             <h4 class="font-bold">No Vulnerabilities Detected</h4>
-            <p class="text-xs text-gray-400 mt-1">All variables have valid constraint bindings.</p>
+            <p class="text-xs text-gray-400 mt-1">All variables have valid quadratic bindings and boolean constraints.</p>
           </div>
         `;
         lucide.createIcons();
@@ -513,7 +648,7 @@
               <span class="px-2 py-0.5 rounded text-xs font-bold ${f.severity === 'HIGH' ? 'bg-red-950 text-red-400 border border-red-800' : 'bg-amber-950 text-amber-400 border border-amber-800'}">${f.severity}</span>
               <span class="font-semibold text-gray-200">${f.category}: ${f.signal_name}</span>
             </div>
-            <span class="text-xs text-gray-500 font-mono">Wire #${f.wire_id} (${f.wire_type})</span>
+            <span class="text-xs text-gray-500 font-mono">Wire #${f.wire_id}</span>
           </div>
           <p class="text-xs text-gray-400">${f.description}</p>
         `;
@@ -526,6 +661,74 @@
       const data = await res.json();
       document.getElementById('sourceFilename').innerText = data.filename;
       document.getElementById('sourceCodeBlock').innerText = data.content || '// No Circom source uploaded';
+    }
+
+    async function fetchTraceSteps() {
+      const res = await fetch('/api/circuit/trace-steps');
+      traceSteps = await res.json();
+      currentStepIdx = 0;
+      updateStepperDisplay();
+    }
+
+    function updateStepperDisplay() {
+      const counter = document.getElementById('stepCounter');
+      const desc = document.getElementById('stepDesc');
+      if (traceSteps.length === 0) {
+        counter.innerText = '0 / 0';
+        desc.innerText = 'No steps';
+        return;
+      }
+      counter.innerText = `${currentStepIdx + 1} / ${traceSteps.length}`;
+      const step = traceSteps[currentStepIdx];
+      desc.innerText = step.description;
+
+      if (cyInstance && step) {
+        cyInstance.nodes().removeClass('highlighted');
+        const cNode = cyInstance.$(`#cons_${step.constraint_id}`);
+        if (cNode) cNode.addClass('highlighted');
+        if (step.solved_wire_id !== null) {
+          const sNode = cyInstance.$(`#sig_${step.solved_wire_id}`);
+          if (sNode) sNode.addClass('highlighted');
+        }
+      }
+    }
+
+    function stepNext() {
+      if (currentStepIdx < traceSteps.length - 1) {
+        currentStepIdx++;
+        updateStepperDisplay();
+      }
+    }
+
+    function stepPrev() {
+      if (currentStepIdx > 0) {
+        currentStepIdx--;
+        updateStepperDisplay();
+      }
+    }
+
+    function resetStepper() {
+      currentStepIdx = 0;
+      updateStepperDisplay();
+    }
+
+    function togglePlayStepper() {
+      const btn = document.getElementById('stepperPlayBtn');
+      if (stepperInterval) {
+        clearInterval(stepperInterval);
+        stepperInterval = null;
+        btn.innerHTML = '<i data-lucide="play" class="w-4 h-4"></i>';
+      } else {
+        btn.innerHTML = '<i data-lucide="pause" class="w-4 h-4"></i>';
+        stepperInterval = setInterval(() => {
+          if (currentStepIdx < traceSteps.length - 1) {
+            stepNext();
+          } else {
+            togglePlayStepper();
+          }
+        }, 1200);
+      }
+      lucide.createIcons();
     }
 
     async function renderDAG() {
@@ -691,6 +894,26 @@
     function toggleUploadModal() {
       const modal = document.getElementById('uploadModal');
       modal.classList.toggle('hidden');
+    }
+
+    function toggleExportModal() {
+      const modal = document.getElementById('exportModal');
+      modal.classList.toggle('hidden');
+    }
+
+    async function openExportModal() {
+      const res = await fetch('/api/circuit/export-test?format=foundry');
+      const data = await res.json();
+      document.getElementById('solidityExportBlock').innerText = data.code;
+      toggleExportModal();
+    }
+
+    function copySolidityCode() {
+      const code = document.getElementById('solidityExportBlock').innerText;
+      navigator.clipboard.writeText(code);
+      const btn = document.getElementById('copySolidityBtn');
+      btn.innerText = 'Copied!';
+      setTimeout(() => { btn.innerText = 'Copy Code'; }, 2000);
     }
 
     async function handleUpload(e) {

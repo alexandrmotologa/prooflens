@@ -16,8 +16,12 @@ from prooflens.core.field import FieldElement
 from prooflens.core.r1cs import R1CSCircuit
 from prooflens.core.r1cs_parser import R1CSBinaryParser
 from prooflens.core.witness import JSONWitnessParser, SymbolTableParser, WTNSBinaryParser, Witness
+from prooflens.debugger.bitwidth import BitWidthScanner
 from prooflens.debugger.dag import DAGEngine
 from prooflens.debugger.engine import CircuitDebugger
+from prooflens.debugger.evaluator import ForwardWitnessEvaluator
+from prooflens.debugger.exporter import TestVectorExporter
+from prooflens.debugger.solver import WitnessAutoFixer
 from prooflens.debugger.sourcemap import CircomSourceMapper
 from prooflens.studio.samples import SAMPLE_REGISTRY
 
@@ -43,7 +47,6 @@ class StudioState:
 
     def __init__(self) -> None:
         self.circuit_name: str = "multiplier"
-        # Load default multiplier sample
         circ, wit, src = SAMPLE_REGISTRY["multiplier"](valid=True)
         self.circuit: R1CSCircuit = circ
         self.witness: Witness = wit
@@ -80,6 +83,15 @@ class MutateWitnessRequest(BaseModel):
 class LoadSampleRequest(BaseModel):
     sample_name: str
     valid: bool = True
+
+
+class ComputeWitnessRequest(BaseModel):
+    inputs: Dict[str, Any]
+
+
+class ApplyFixRequest(BaseModel):
+    wire_id: int
+    suggested_value: str
 
 
 # --- API Routes ---
@@ -176,6 +188,104 @@ def get_audit_findings() -> List[Dict[str, Any]]:
         }
         for f in findings
     ]
+
+
+@app.get("/api/circuit/bit-audit")
+def get_bit_audit() -> List[Dict[str, Any]]:
+    """Run bit-width and range scanner audit."""
+    scanner = BitWidthScanner(state.circuit, state.witness)
+    findings = scanner.scan()
+    return [
+        {
+            "severity": f.severity,
+            "category": f.category,
+            "wire_id": f.wire_id,
+            "signal_name": f.signal_name,
+            "description": f.description,
+            "expected_bits": f.expected_bits,
+            "actual_value": f.actual_value,
+        }
+        for f in findings
+    ]
+
+
+@app.get("/api/circuit/auto-fixes")
+def get_auto_fixes() -> List[Dict[str, Any]]:
+    """Get algebraic fixes for unsatisfied constraints."""
+    fixer = WitnessAutoFixer(state.circuit, state.witness)
+    fixes = fixer.find_all_fixes()
+    return [
+        {
+            "constraint_id": f.constraint_id,
+            "wire_id": f.wire_id,
+            "wire_name": f.wire_name,
+            "current_value": str(f.current_value.to_signed_int()),
+            "suggested_value": str(f.suggested_value.to_signed_int()),
+            "residual_before": str(f.residual_before.to_signed_int()),
+            "net_satisfied_change": f.net_satisfied_change,
+            "description": f.description,
+        }
+        for f in fixes
+    ]
+
+
+@app.post("/api/witness/apply-fix")
+def apply_fix(req: ApplyFixRequest) -> Dict[str, Any]:
+    """Apply an algebraic fix directly to the active witness."""
+    val_int = int(req.suggested_value, 0)
+    state.witness[req.wire_id] = val_int
+    return get_circuit_stats()
+
+
+@app.post("/api/witness/compute")
+def compute_witness(req: ComputeWitnessRequest) -> Dict[str, Any]:
+    """Forward-evaluate and compute full witness from raw inputs."""
+    evaluator = ForwardWitnessEvaluator(state.circuit)
+    res = evaluator.evaluate_from_inputs(req.inputs)
+    state.witness = res.witness
+
+    return {
+        "is_complete": res.is_complete,
+        "unsolved_wires": res.unsolved_wires,
+        "steps_count": len(res.steps),
+        "stats": get_circuit_stats(),
+    }
+
+
+@app.get("/api/circuit/trace-steps")
+def get_trace_steps() -> List[Dict[str, Any]]:
+    """Return topological evaluation steps for the Time-Travel Debugger."""
+    # Build inputs from primary inputs in current witness
+    inputs = {}
+    for wid, wire in state.circuit.wires.items():
+        if wire.wire_type in ("public_input", "private_input"):
+            inputs[wid] = state.witness[wid].value
+
+    evaluator = ForwardWitnessEvaluator(state.circuit)
+    res = evaluator.evaluate_from_inputs(inputs)
+
+    return [
+        {
+            "step_index": s.step_index,
+            "constraint_id": s.constraint_id,
+            "solved_wire_id": s.solved_wire_id,
+            "solved_wire_name": s.solved_wire_name,
+            "assigned_value": str(s.assigned_value.to_signed_int()) if s.assigned_value is not None else None,
+            "formula": s.formula,
+            "is_satisfied": s.is_satisfied,
+            "description": s.description,
+        }
+        for s in res.steps
+    ]
+
+
+@app.get("/api/circuit/export-test")
+def export_test(format: str = "foundry") -> Dict[str, Any]:
+    """Export Foundry Solidity contract or JSON test vectors."""
+    exporter = TestVectorExporter(state.circuit, state.witness)
+    if format == "foundry":
+        return {"format": "foundry", "code": exporter.export_foundry_solidity()}
+    return {"format": "json", "data": exporter.export_json()}
 
 
 @app.post("/api/witness/mutate")

@@ -1,0 +1,329 @@
+const fs = require('fs');
+const path = require('path');
+const { Resvg } = require('B:/workgit/node_modules/@resvg/resvg-js');
+
+function buildLogoSvg() {
+  return `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1024 1024" width="1024" height="1024">
+  <defs>
+    <clipPath id="squircle-clip">
+      <rect x="24" y="24" width="976" height="976" rx="220" />
+    </clipPath>
+
+    <linearGradient id="cyan-glow" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#00f5ff"/>
+      <stop offset="100%" stop-color="#0284c7"/>
+    </linearGradient>
+
+    <linearGradient id="amber-accent" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#fbbf24"/>
+      <stop offset="100%" stop-color="#ea580c"/>
+    </linearGradient>
+
+    <!-- Obsidian & Slate Low-Poly Facet Gradients -->
+    <linearGradient id="facet-bright" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#475569"/>
+      <stop offset="100%" stop-color="#334155"/>
+    </linearGradient>
+
+    <linearGradient id="facet-mid-light" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#334155"/>
+      <stop offset="100%" stop-color="#243044"/>
+    </linearGradient>
+
+    <linearGradient id="facet-mid" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#243044"/>
+      <stop offset="100%" stop-color="#182234"/>
+    </linearGradient>
+
+    <linearGradient id="facet-dark" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#182234"/>
+      <stop offset="100%" stop-color="#0f172a"/>
+    </linearGradient>
+
+    <linearGradient id="facet-deep" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#0f172a"/>
+      <stop offset="100%" stop-color="#090d16"/>
+    </linearGradient>
+
+    <filter id="subtle-shadow" x="-15%" y="-15%" width="130%" height="130%">
+      <feDropShadow dx="0" dy="16" stdDeviation="20" flood-color="#030712" flood-opacity="0.18" />
+    </filter>
+  </defs>
+
+  <!-- Luxury White Squircle Container -->
+  <rect x="24" y="24" width="976" height="976" rx="220" fill="#ffffff" stroke="#e2e8f0" stroke-width="6" />
+
+  <g clip-path="url(#squircle-clip)">
+    <g transform="translate(512, 512)" filter="url(#subtle-shadow)">
+
+      <!-- Hexagonal Architectural Gateway -->
+      <polygon points="
+        0,-390
+        338,-195
+        338,195
+        0,390
+        -338,195
+        -338,-195
+      " fill="none" stroke="#0f172a" stroke-width="36" stroke-linejoin="round" />
+
+      <polygon points="
+        0,-355
+        307,-177
+        307,177
+        0,355
+        -307,177
+        -307,-177
+      " fill="none" stroke="#00f5ff" stroke-width="4" opacity="0.45" stroke-dasharray="16, 12" />
+
+      <!-- Gateway Nodes -->
+      <circle cx="0" cy="-390" r="10" fill="#00f5ff" />
+      <circle cx="338" cy="-195" r="9" fill="#0f172a" />
+      <circle cx="338" cy="195" r="9" fill="#0f172a" />
+      <circle cx="0" cy="390" r="10" fill="#00f5ff" />
+      <circle cx="-338" cy="195" r="9" fill="#0f172a" />
+      <circle cx="-338" cy="-195" r="9" fill="#0f172a" />
+
+      <!-- 100% Watertight Solid Base Silhouette -->
+      <path d="
+        M 0,-215
+        L 85,-180
+        L 155,-280
+        L 185,-240
+        L 165,-165
+        L 225,-140
+        L 260,-40
+        L 265,55
+        L 225,145
+        L 180,215
+        L 115,285
+        L 45,310
+        L 0,315
+        L -45,310
+        L -115,285
+        L -180,215
+        L -225,145
+        L -265,55
+        L -260,-40
+        L -225,-140
+        L -165,-165
+        L -185,-240
+        L -155,-280
+        L -85,-180
+        Z
+      " fill="#090d16" stroke="#090d16" stroke-width="4" stroke-linejoin="round" />
+
+      <!-- ══════════ FACIAL MESH & PLUMAGE FACETS ══════════ -->
+
+      <!-- Ear Tufts -->
+      <!-- Left Ear Tuft -->
+      <polygon points="-85,-180 -155,-280 -185,-240" fill="url(#facet-mid-light)" />
+      <polygon points="-85,-180 -185,-240 -165,-165" fill="url(#facet-dark)" />
+      <!-- Right Ear Tuft -->
+      <polygon points="85,-180 155,-280 185,-240" fill="url(#facet-bright)" />
+      <polygon points="85,-180 185,-240 165,-165" fill="url(#facet-mid)" />
+
+      <!-- Forehead & Crown -->
+      <polygon points="0,-215 -85,-180 -55,-130" fill="url(#facet-mid-light)" />
+      <polygon points="0,-215 85,-180 55,-130" fill="url(#facet-bright)" />
+      <polygon points="0,-215 -55,-130 0,-110" fill="url(#facet-mid)" />
+      <polygon points="0,-215 55,-130 0,-110" fill="url(#facet-mid-light)" />
+
+      <!-- Outer Temples / Crown Sides -->
+      <polygon points="-85,-180 -165,-165 -125,-115" fill="url(#facet-dark)" />
+      <polygon points="-165,-165 -225,-140 -175,-85" fill="url(#facet-deep)" />
+      <polygon points="-165,-165 -175,-85 -125,-115" fill="url(#facet-mid)" />
+      <polygon points="-85,-180 -125,-115 -55,-130" fill="url(#facet-mid-light)" />
+
+      <polygon points="85,-180 165,-165 125,-115" fill="url(#facet-mid)" />
+      <polygon points="165,-165 225,-140 175,-85" fill="url(#facet-dark)" />
+      <polygon points="165,-165 175,-85 125,-115" fill="url(#facet-bright)" />
+      <polygon points="85,-180 125,-115 55,-130" fill="url(#facet-mid-light)" />
+
+      <!-- Lateral Cheeks / Outer Discs -->
+      <polygon points="-225,-140 -260,-40 -195,-35" fill="url(#facet-deep)" />
+      <polygon points="-225,-140 -195,-35 -175,-85" fill="url(#facet-dark)" />
+      <polygon points="-260,-40 -265,55 -200,45" fill="url(#facet-deep)" />
+      <polygon points="-260,-40 -200,45 -195,-35" fill="url(#facet-dark)" />
+      <polygon points="-265,55 -225,145 -170,120" fill="url(#facet-deep)" />
+      <polygon points="-265,55 -170,120 -200,45" fill="url(#facet-dark)" />
+
+      <polygon points="225,-140 260,-40 195,-35" fill="url(#facet-mid)" />
+      <polygon points="225,-140 195,-35 175,-85" fill="url(#facet-bright)" />
+      <polygon points="260,-40 265,55 200,45" fill="url(#facet-mid)" />
+      <polygon points="260,-40 200,45 195,-35" fill="url(#facet-bright)" />
+      <polygon points="265,55 225,145 170,120" fill="url(#facet-mid)" />
+      <polygon points="265,55 170,120 200,45" fill="url(#facet-bright)" />
+
+      <!-- Fierce Superciliary Ridge (Owl Brow V-Plate) -->
+      <polygon points="0,-110 -55,-130 -100,-70" fill="url(#facet-mid)" />
+      <polygon points="0,-110 55,-130 100,-70" fill="url(#facet-bright)" />
+      <polygon points="0,-110 -100,-70 0,-45" fill="url(#facet-dark)" />
+      <polygon points="0,-110 100,-70 0,-45" fill="url(#facet-mid-light)" />
+
+      <!-- Outer Eye Socket Beds -->
+      <polygon points="-125,-115 -175,-85 -165,-25" fill="url(#facet-dark)" />
+      <polygon points="-125,-115 -165,-25 -100,-70" fill="url(#facet-mid)" />
+      <polygon points="-175,-85 -195,-35 -165,-25" fill="url(#facet-deep)" />
+      <polygon points="-195,-35 -200,45 -155,45" fill="url(#facet-deep)" />
+      <polygon points="-195,-35 -155,45 -165,-25" fill="url(#facet-dark)" />
+
+      <polygon points="125,-115 175,-85 165,-25" fill="url(#facet-bright)" />
+      <polygon points="125,-115 165,-25 100,-70" fill="url(#facet-mid-light)" />
+      <polygon points="175,-85 195,-35 165,-25" fill="url(#facet-mid)" />
+      <polygon points="195,-35 200,45 155,45" fill="url(#facet-mid)" />
+      <polygon points="195,-35 155,45 165,-25" fill="url(#facet-bright)" />
+
+      <!-- Sub-Orbital Cheek Facets -->
+      <polygon points="-165,-25 -155,45 -100,55" fill="url(#facet-dark)" />
+      <polygon points="-200,45 -170,120 -115,115" fill="url(#facet-deep)" />
+      <polygon points="-200,45 -115,115 -100,55" fill="url(#facet-dark)" />
+
+      <polygon points="165,-25 155,45 100,55" fill="url(#facet-bright)" />
+      <polygon points="200,45 170,120 115,115" fill="url(#facet-mid)" />
+      <polygon points="200,45 115,115 100,55" fill="url(#facet-bright)" />
+
+      <!-- Jaw / Throat Base Facets -->
+      <polygon points="-100,55 -115,115 -55,145" fill="url(#facet-dark)" />
+      <polygon points="-100,55 -55,145 0,110" fill="url(#facet-mid)" />
+      <polygon points="100,55 115,115 55,145" fill="url(#facet-mid-light)" />
+      <polygon points="100,55 55,145 0,110" fill="url(#facet-bright)" />
+
+      <!-- ══════════ THE PROOFLENS OPTICAL EYE ASSEMBLIES ══════════ -->
+
+      <!-- LEFT EYE (Centered at X = -95, Y = -5) -->
+      <g transform="translate(-95, -5)">
+        <!-- Recessed Dark Socket Background -->
+        <circle cx="0" cy="0" r="48" fill="#060911" stroke="#1e293b" stroke-width="2.5" />
+        <!-- Octagonal Metal Aperture Frame -->
+        <polygon points="
+          -18,-44 18,-44
+          44,-18 44,18
+          18,44 -18,44
+          -44,18 -44,-18
+        " fill="none" stroke="#334155" stroke-width="3" />
+        <!-- Glowing Electric Cyan Primary Lens Ring -->
+        <circle cx="0" cy="0" r="40" fill="none" stroke="url(#cyan-glow)" stroke-width="5" />
+        <!-- Concentric Inner Vernier / Calibration Track -->
+        <circle cx="0" cy="0" r="31" fill="none" stroke="#00f5ff" stroke-width="1.8" opacity="0.6" stroke-dasharray="6, 4" />
+        <!-- Optical Iris Blades -->
+        <polygon points="0,-28 24,-14 18,20 -14,26 -26,-2" fill="#081528" stroke="#00f5ff" stroke-width="1.2" />
+        <!-- High-Precision Core Sensor -->
+        <circle cx="0" cy="0" r="18" fill="#021020" stroke="#00f5ff" stroke-width="2" />
+        <!-- Intense Predator Pupil (Geometric Diamond) -->
+        <polygon points="0,-12 8,-2 0,12 -8,-2" fill="#00f5ff" />
+        <circle cx="0" cy="0" r="4" fill="#ffffff" />
+        <!-- Optical Specular Reflection Glint -->
+        <circle cx="-10" cy="-10" r="3.5" fill="#ffffff" opacity="0.85" />
+        <circle cx="-16" cy="-6" r="1.8" fill="#ffffff" opacity="0.5" />
+      </g>
+
+      <!-- RIGHT EYE (Centered at X = 95, Y = -5) -->
+      <g transform="translate(95, -5)">
+        <!-- Recessed Dark Socket Background -->
+        <circle cx="0" cy="0" r="48" fill="#060911" stroke="#1e293b" stroke-width="2.5" />
+        <!-- Octagonal Metal Aperture Frame -->
+        <polygon points="
+          -18,-44 18,-44
+          44,-18 44,18
+          18,44 -18,44
+          -44,18 -44,-18
+        " fill="none" stroke="#334155" stroke-width="3" />
+        <!-- Glowing Electric Cyan Primary Lens Ring -->
+        <circle cx="0" cy="0" r="40" fill="none" stroke="url(#cyan-glow)" stroke-width="5" />
+        <!-- Concentric Inner Vernier / Calibration Track -->
+        <circle cx="0" cy="0" r="31" fill="none" stroke="#00f5ff" stroke-width="1.8" opacity="0.6" stroke-dasharray="6, 4" />
+        <!-- Optical Iris Blades -->
+        <polygon points="0,-28 24,-14 18,20 -14,26 -26,-2" fill="#081528" stroke="#00f5ff" stroke-width="1.2" />
+        <!-- High-Precision Core Sensor -->
+        <circle cx="0" cy="0" r="18" fill="#021020" stroke="#00f5ff" stroke-width="2" />
+        <!-- Intense Predator Pupil (Geometric Diamond) -->
+        <polygon points="0,-12 8,-2 0,12 -8,-2" fill="#00f5ff" />
+        <circle cx="0" cy="0" r="4" fill="#ffffff" />
+        <!-- Optical Specular Reflection Glint -->
+        <circle cx="-10" cy="-10" r="3.5" fill="#ffffff" opacity="0.85" />
+        <circle cx="-16" cy="-6" r="1.8" fill="#ffffff" opacity="0.5" />
+      </g>
+
+      <!-- ══════════ ORIGAMI PREDATOR BEAK (Amber 5% Accent) ══════════ -->
+      <!-- Upper Bridge Under Eyes -->
+      <polygon points="0,-45 -22,-10 0,10" fill="#d97706" />
+      <polygon points="0,-45 0,10 22,-10" fill="#f59e0b" />
+      <!-- Lower Tapered Beak Blade -->
+      <polygon points="0,10 -22,-10 -15,70 0,90" fill="#b45309" />
+      <polygon points="0,10 0,90 15,70 22,-10" fill="#fbbf24" />
+      <!-- Sharp Beak Keel Ridge Line -->
+      <line x1="0" y1="-45" x2="0" y2="90" stroke="#fef08a" stroke-width="2" opacity="0.75" />
+
+      <!-- ══════════ CHEST CHEVRON ARMOR & R1CS LATTICE ══════════ -->
+      <!-- Center Sternum Chevron Plates -->
+      <polygon points="0,110 -55,145 0,185" fill="url(#facet-dark)" />
+      <polygon points="0,110 0,185 55,145" fill="url(#facet-mid)" />
+      <polygon points="0,185 -50,215 0,255" fill="url(#facet-deep)" />
+      <polygon points="0,185 0,255 50,215" fill="url(#facet-dark)" />
+      <polygon points="0,255 -38,280 0,315" fill="url(#facet-deep)" />
+      <polygon points="0,255 0,315 38,280" fill="url(#facet-dark)" />
+
+      <!-- Left Flank & Wing Mantle -->
+      <polygon points="-170,120 -225,145 -180,215 -125,185" fill="url(#facet-deep)" />
+      <polygon points="-170,120 -125,185 -115,115" fill="url(#facet-dark)" />
+      <polygon points="-115,115 -125,185 -55,145" fill="url(#facet-mid)" />
+      <polygon points="-125,185 -180,215 -115,285 -65,235" fill="url(#facet-deep)" />
+      <polygon points="-125,185 -65,235 -55,145" fill="url(#facet-dark)" />
+      <polygon points="-55,145 -65,235 0,185" fill="url(#facet-mid)" />
+      <polygon points="-65,235 -115,285 -45,310 -38,280" fill="url(#facet-deep)" />
+      <polygon points="-65,235 -38,280 -50,215" fill="url(#facet-dark)" />
+      <polygon points="-50,215 -38,280 0,255" fill="url(#facet-dark)" />
+
+      <!-- Right Flank & Wing Mantle (Volumetric Light Side) -->
+      <polygon points="170,120 225,145 180,215 125,185" fill="url(#facet-dark)" />
+      <polygon points="170,120 125,185 115,115" fill="url(#facet-bright)" />
+      <polygon points="115,115 125,185 55,145" fill="url(#facet-mid-light)" />
+      <polygon points="125,185 180,215 115,285 65,235" fill="url(#facet-dark)" />
+      <polygon points="125,185 65,235 55,145" fill="url(#facet-bright)" />
+      <polygon points="55,145 65,235 0,185" fill="url(#facet-mid-light)" />
+      <polygon points="65,235 115,285 45,310 38,280" fill="url(#facet-dark)" />
+      <polygon points="65,235 38,280 50,215" fill="url(#facet-mid)" />
+      <polygon points="50,215 38,280 0,255" fill="url(#facet-mid-light)" />
+
+      <!-- Tail Plinth Apex -->
+      <polygon points="-45,310 0,315 -38,280" fill="url(#facet-deep)" />
+      <polygon points="45,310 0,315 38,280" fill="url(#facet-dark)" />
+
+      <!-- Precision Cryptographic Vector Lines (Subtle Cyan Lattice) -->
+      <line x1="0" y1="110" x2="0" y2="315" stroke="#00f5ff" stroke-width="2" opacity="0.65" />
+      <line x1="-55" y1="145" x2="0" y2="185" stroke="#00f5ff" stroke-width="1.2" opacity="0.4" />
+      <line x1="55" y1="145" x2="0" y2="185" stroke="#00f5ff" stroke-width="1.2" opacity="0.4" />
+      <line x1="-50" y1="215" x2="0" y2="255" stroke="#00f5ff" stroke-width="1.2" opacity="0.35" />
+      <line x1="50" y1="215" x2="0" y2="255" stroke="#00f5ff" stroke-width="1.2" opacity="0.35" />
+
+      <!-- Micro Telemetry Dots on Chest Core -->
+      <circle cx="0" cy="185" r="3" fill="#00f5ff" />
+      <circle cx="0" cy="255" r="2.5" fill="#00f5ff" opacity="0.8" />
+      <circle cx="0" cy="315" r="2.5" fill="#00f5ff" opacity="0.8" />
+
+    </g>
+  </g>
+</svg>`;
+}
+
+async function renderLogo(outputDir) {
+  const svg = buildLogoSvg();
+  const svgPath = path.join(outputDir, 'logo.svg');
+  const pngPath = path.join(outputDir, 'logo.png');
+
+  fs.writeFileSync(svgPath, svg, 'utf8');
+  console.log('✓ Written', svgPath);
+
+  const resvg = new Resvg(svg, {
+    fitTo: { mode: 'width', value: 1024 }
+  });
+  const pngData = resvg.render().asPng();
+  fs.writeFileSync(pngPath, pngData);
+  console.log('✓ Successfully rendered logo.svg and logo.png at 1024x1024');
+}
+
+const outDir = path.resolve(__dirname, '../docs/images');
+if (!fs.existsSync(outDir)) {
+  fs.mkdirSync(outDir, { recursive: true });
+}
+renderLogo(outDir);

@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/images/logo.svg" width="128" height="128" alt="ProofLens Logo" />
+  <img src="docs/images/logo.png?raw=true" alt="ProofLens Logo" width="130" style="border-radius: 24px;" />
 </p>
 
 <h1 align="center">ProofLens</h1>
